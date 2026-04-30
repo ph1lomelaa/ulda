@@ -1,16 +1,47 @@
+import { useEffect, useState } from "react";
 import { Button } from "../components/ui/button";
 import { Label } from "../components/ui/label";
 import { Database, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router";
 import { Link } from "react-router";
+import { useAuth } from "../auth/AuthProvider";
 
 export function LoginPageDark() {
   const navigate = useNavigate();
+  const { login, register, isLoading, isAuthenticated } = useAuth();
+  const [mode, setMode] = useState<"login" | "register">("login");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    navigate("/app");
+    setError(null);
+    setIsSubmitting(true);
+
+    try {
+      if (mode === "register") {
+        await register({ name, email, password });
+      } else {
+        await login({ email, password });
+      }
+      navigate("/app");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Authentication failed");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      navigate("/app");
+    }
+  }, [isAuthenticated, isLoading, navigate]);
+
+  const isRegisterMode = mode === "register";
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4 relative overflow-hidden">
@@ -40,7 +71,45 @@ export function LoginPageDark() {
             </div>
           </div>
 
+          <div className="inline-flex w-full rounded-xl border border-white/10 bg-white/[0.04] p-1 mb-6">
+            <button
+              type="button"
+              onClick={() => setMode("login")}
+              className={`flex-1 rounded-lg px-3 py-2 text-sm transition-colors ${
+                !isRegisterMode ? "bg-blue-500/15 text-blue-50 border border-blue-400/20" : "text-white/50"
+              }`}
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("register")}
+              className={`flex-1 rounded-lg px-3 py-2 text-sm transition-colors ${
+                isRegisterMode ? "bg-blue-500/15 text-blue-50 border border-blue-400/20" : "text-white/50"
+              }`}
+            >
+              Register
+            </button>
+          </div>
+
           <form onSubmit={handleLogin} className="space-y-6">
+            {isRegisterMode && (
+              <div className="space-y-2">
+                <Label htmlFor="name" className="text-white/70 text-xs tracking-wide uppercase">
+                  Full Name
+                </Label>
+                <input
+                  id="name"
+                  type="text"
+                  placeholder="Muslima Kosmagambetova"
+                  className="h-11 px-3 w-full rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-white/40 focus:border-white/30 focus:bg-white/[0.15] focus:outline-none focus:ring-2 focus:ring-white/10 transition-colors"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  required={isRegisterMode}
+                />
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="email" className="text-white/70 text-xs tracking-wide uppercase">
                 Email
@@ -50,6 +119,8 @@ export function LoginPageDark() {
                 type="email"
                 placeholder="you@example.com"
                 className="h-11 px-3 w-full rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-white/40 focus:border-white/30 focus:bg-white/[0.15] focus:outline-none focus:ring-2 focus:ring-white/10 transition-colors"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
                 required
               />
             </div>
@@ -63,21 +134,36 @@ export function LoginPageDark() {
                 type="password"
                 placeholder="••••••••"
                 className="h-11 px-3 w-full rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-white/40 focus:border-white/30 focus:bg-white/[0.15] focus:outline-none focus:ring-2 focus:ring-white/10 transition-colors"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
                 required
               />
             </div>
 
-            <Button type="submit" className="w-full h-11 font-medium">
-              SIGN IN →
+            {error && (
+              <div className="rounded-lg border border-red-400/20 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+                {error}
+              </div>
+            )}
+
+            <Button type="submit" className="w-full h-11 font-medium" disabled={isSubmitting}>
+              {isSubmitting ? "PLEASE WAIT..." : isRegisterMode ? "CREATE ACCOUNT →" : "SIGN IN →"}
             </Button>
           </form>
 
           <div className="mt-8 text-center">
             <p className="text-sm text-white/40">
-              Don't have an account?{" "}
-              <a href="#" className="text-white hover:text-white/80 transition-colors">
-                Sign up
-              </a>
+              {isRegisterMode ? "Already have an account?" : "Don't have an account?"}{" "}
+              <button
+                type="button"
+                onClick={() => {
+                  setMode(isRegisterMode ? "login" : "register");
+                  setError(null);
+                }}
+                className="text-white hover:text-white/80 transition-colors"
+              >
+                {isRegisterMode ? "Sign in" : "Sign up"}
+              </button>
             </p>
           </div>
 

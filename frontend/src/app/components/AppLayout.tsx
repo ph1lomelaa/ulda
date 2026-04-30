@@ -1,6 +1,8 @@
 import { Outlet, Link, useLocation } from "react-router";
-import { Database, LayoutDashboard, Folder, MessageSquare, Bell, Search, Zap } from "lucide-react";
+import { Database, LayoutDashboard, Folder, MessageSquare, Bell, Search, Zap, LogOut } from "lucide-react";
 import { Avatar, AvatarFallback } from "./ui/avatar";
+import { useAuth } from "../auth/AuthProvider";
+import { Button } from "./ui/button";
 
 const navItems = [
   { path: "/app", label: "Dashboard", icon: LayoutDashboard },
@@ -11,6 +13,7 @@ const navItems = [
 
 export function AppLayout() {
   const location = useLocation();
+  const { user, logout } = useAuth();
 
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
@@ -75,14 +78,26 @@ export function AppLayout() {
             </div>
           </div>
 
-          <div className="hidden sm:flex items-center gap-4">
+          <div className="hidden sm:flex items-center gap-3">
             <button className="relative p-2 hover:bg-white/5 rounded-lg transition-colors">
               <Bell className="w-5 h-5 text-white/50" />
               <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-white rounded-full"></span>
             </button>
 
+            <Button variant="ghost" size="sm" className="gap-2" onClick={() => void logout()}>
+              <LogOut className="w-4 h-4" />
+              Logout
+            </Button>
+
             <Avatar className="w-8 h-8 border border-white/10">
-              <AvatarFallback className="bg-white/10 text-white text-sm">JD</AvatarFallback>
+              <AvatarFallback className="bg-white/10 text-white text-sm">
+                {user?.name
+                  ?.split(" ")
+                  .map((part) => part[0])
+                  .join("")
+                  .slice(0, 2)
+                  .toUpperCase() ?? "JD"}
+              </AvatarFallback>
             </Avatar>
           </div>
         </header>

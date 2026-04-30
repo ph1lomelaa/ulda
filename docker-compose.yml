@@ -1,0 +1,83 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: ulda-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ulda
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "55432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ulda"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  chroma:
+    image: chromadb/chroma:latest
+    container_name: ulda-chroma
+    restart: unless-stopped
+    ports:
+      - "8001:8000"
+    volumes:
+      - chroma_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:8000/api/v2/heartbeat || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  backend:
+    build:
+      context: ./backend
+    container_name: ulda-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      chroma:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@postgres:5432/ulda
+      JWT_SECRET_KEY: change-me
+      JWT_REFRESH_SECRET_KEY: change-me-too
+      ACCESS_TOKEN_EXPIRE_MINUTES: 15
+      REFRESH_TOKEN_EXPIRE_DAYS: 7
+      FRONTEND_ORIGIN: http://127.0.0.1:5173
+      COOKIE_SECURE: "false"
+      COOKIE_SAMESITE: lax
+      CHROMA_HOST: chroma
+      CHROMA_PORT: 8000
+      CHROMA_COLLECTION_PREFIX: ulda
+      UPLOAD_STORAGE_DIR: /app/storage/uploads
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+      ASSISTANT_SYSTEM_PROMPT: ${ASSISTANT_SYSTEM_PROMPT:-You are ULDA, an enterprise data assistant. Answer only from the supplied context. If the context is insufficient, say that clearly. Be concise, concrete, and cite the relevant sources.}
+    volumes:
+      - backend_uploads:/app/storage/uploads
+    ports:
+      - "18000:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:8000/docs >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  frontend:
+    build:
+      context: ./frontend
+    container_name: ulda-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_started
+    environment:
+      VITE_API_BASE_URL: http://127.0.0.1:18000/api
+    ports:
+      - "5173:5173"
+
+volumes:
+  postgres_data:
+  chroma_data:
+  backend_uploads:
