@@ -2,6 +2,7 @@ CASUAL_MESSAGES = {
     "hi",
     "hello",
     "hey",
+    "привет",
     "how are you",
     "hi how are you",
     "thanks",
@@ -50,3 +51,31 @@ def build_no_sources_reply(question: str, unified_answer: str | None) -> str:
         "I can still help with general questions even though there are no indexed sources yet. "
         "Ask anything, or upload a document if you want answers grounded in your materials."
     )
+
+
+def build_llm_unavailable_reply(
+    *,
+    question: str,
+    has_indexed_sources: bool,
+    bullet_points: list[str] | None = None,
+) -> str:
+    normalized = question.strip().lower()
+    bullet_points = bullet_points or []
+
+    if bullet_points:
+        return (
+            "I found relevant material in your indexed sources.\n\n"
+            "Relevant context:\n"
+            f"{chr(10).join(bullet_points)}"
+        )
+
+    if normalized in CASUAL_MESSAGES:
+        return "Hello! How can I help you today?"
+
+    if has_indexed_sources and any(token in normalized for token in DOCUMENT_HINTS):
+        return (
+            "I have indexed sources available, but the language model is currently unavailable for synthesis. "
+            "Try again in a moment, or ask a more specific question about the uploaded material."
+        )
+
+    return "I can still help, but the language model is currently unavailable. Please try again in a moment."

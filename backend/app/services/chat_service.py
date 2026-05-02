@@ -9,7 +9,7 @@ from app.models.data_source import DataSource
 from app.models.message import Message
 from app.models.user import User
 from app.services.audit import create_audit_log
-from app.services.chat_fallbacks import build_no_sources_reply, should_prefer_indexed_context
+from app.services.chat_fallbacks import build_llm_unavailable_reply, build_no_sources_reply, should_prefer_indexed_context
 from app.services.rag_pipeline import build_citations, build_context_blocks, build_history_blocks, prepare_retrieved_chunks
 from app.services.llm_service import generate_unified_answer
 from app.services.text_sanitizer import sanitize_excerpt
@@ -70,22 +70,12 @@ def build_assistant_reply(
         )
         if unified_answer:
             reply_text = unified_answer
-        elif bullet_points:
-            reply_text = (
-                "I searched your indexed sources and found the most relevant passages for this question.\n\n"
-                "Relevant context:\n"
-                f"{chr(10).join(bullet_points)}\n\n"
-                "LLM synthesis is not enabled yet, so this reply is showing the grounded retrieval context directly."
-            )
         else:
-            if user_message.content.strip().lower() in {"hi", "hello", "hey", "how are you", "hi how are you", "thanks", "thank you"}:
-                reply_text = "Hello! How can I help you today?"
-            else:
-                reply_text = (
-                    "I have indexed sources available, but I could not find a strong match for that question yet. "
-                    "Try referring to the uploaded material more specifically, such as the project title, topic, "
-                    "or concept you want to explore."
-                )
+            reply_text = build_llm_unavailable_reply(
+                question=user_message.content,
+                has_indexed_sources=True,
+                bullet_points=bullet_points,
+            )
 
     assistant_message = Message(
         conversation_id=conversation.id,
