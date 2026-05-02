@@ -1,12 +1,12 @@
-from google import genai
-
 from app.core.config import settings
 
 
-def _build_client() -> genai.Client | None:
+def _build_client():
     if not settings.gemini_api_key:
         return None
     try:
+        from google import genai
+
         return genai.Client(api_key=settings.gemini_api_key)
     except Exception:
         return None
