@@ -4,24 +4,21 @@ services:
     container_name: ulda-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ulda
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "55432:5432"
+      POSTGRES_DB: ${POSTGRES_DB:-ulda}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d ulda"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-ulda}"]
       interval: 5s
       timeout: 5s
       retries: 10
+
   chroma:
-    image: chromadb/chroma:latest
+    image: chromadb/chroma:0.5.18
     container_name: ulda-chroma
     restart: unless-stopped
-    ports:
-      - "8001:8000"
     volumes:
       - chroma_data:/data
     healthcheck:
@@ -29,6 +26,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+
   backend:
     build:
       context: ./backend
@@ -40,44 +38,75 @@ services:
       chroma:
         condition: service_started
     environment:
-      DATABASE_URL: postgresql+psycopg://postgres:postgres@postgres:5432/ulda
-      JWT_SECRET_KEY: change-me
-      JWT_REFRESH_SECRET_KEY: change-me-too
-      ACCESS_TOKEN_EXPIRE_MINUTES: 15
-      REFRESH_TOKEN_EXPIRE_DAYS: 7
-      FRONTEND_ORIGIN: http://127.0.0.1:5173
-      COOKIE_SECURE: "false"
-      COOKIE_SAMESITE: lax
+      APP_NAME: ${APP_NAME:-ULDA Backend}
+      API_PREFIX: ${API_PREFIX:-/api}
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-ulda}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      JWT_REFRESH_SECRET_KEY: ${JWT_REFRESH_SECRET_KEY}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-15}
+      REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-7}
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN}
+      FRONTEND_ORIGIN_LOCALHOST: ${FRONTEND_ORIGIN_LOCALHOST:-http://localhost:5173}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      COOKIE_SAMESITE: ${COOKIE_SAMESITE:-lax}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN:-}
       CHROMA_HOST: chroma
       CHROMA_PORT: 8000
-      CHROMA_COLLECTION_PREFIX: ulda
+      CHROMA_COLLECTION_PREFIX: ${CHROMA_COLLECTION_PREFIX:-ulda}
       UPLOAD_STORAGE_DIR: /app/storage/uploads
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
-      ASSISTANT_SYSTEM_PROMPT: ${ASSISTANT_SYSTEM_PROMPT:-You are ULDA, an enterprise data assistant. Answer only from the supplied context. If the context is insufficient, say that clearly. Be concise, concrete, and cite the relevant sources.}
+      RETRIEVAL_CANDIDATE_LIMIT: ${RETRIEVAL_CANDIDATE_LIMIT:-8}
+      RETRIEVAL_CONTEXT_LIMIT: ${RETRIEVAL_CONTEXT_LIMIT:-5}
+      RETRIEVAL_SCORE_THRESHOLD: ${RETRIEVAL_SCORE_THRESHOLD:-0.2}
+      RETRIEVAL_MAX_CHUNKS_PER_DOCUMENT: ${RETRIEVAL_MAX_CHUNKS_PER_DOCUMENT:-2}
+      RETRIEVAL_DEDUP_SIMILARITY: ${RETRIEVAL_DEDUP_SIMILARITY:-0.92}
+      CONVERSATION_HISTORY_LIMIT: ${CONVERSATION_HISTORY_LIMIT:-8}
+      CITATION_EXCERPT_CHARS: ${CITATION_EXCERPT_CHARS:-240}
+      ASSISTANT_SYSTEM_PROMPT: >-
+        ${ASSISTANT_SYSTEM_PROMPT:-You are ULDA, an enterprise data assistant. Use indexed
+        documents as your primary context, but answer like a capable AI assistant:
+        explain, summarize, infer, reorganize, and help the user work with the material.
+        Prefer grounded answers when the documents are relevant, cite the relevant
+        sources when you use them, and if the documents are incomplete, you may still
+        answer helpfully from general knowledge without pretending the files said
+        something they did not.}
     volumes:
       - backend_uploads:/app/storage/uploads
-    ports:
-      - "18000:8000"
+    expose:
+      - "8000"
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:8000/docs >/dev/null || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
+    networks:
+      - default
+      - caddy_net
+
   frontend:
     build:
       context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
     container_name: ulda-frontend
     restart: unless-stopped
     depends_on:
       backend:
         condition: service_started
-    environment:
-      VITE_API_BASE_URL: http://127.0.0.1:18000/api
-    ports:
-      - "5173:5173"
+    expose:
+      - "80"
+    networks:
+      - default
+      - caddy_net
 
 volumes:
   postgres_data:
   chroma_data:
   backend_uploads:
+
+networks:
+  caddy_net:
+    external: true
+    name: bull_project_default
