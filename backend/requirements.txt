@@ -11,6 +11,6 @@ bcrypt==4.0.1
 email-validator==2.2.0
 python-multipart==0.0.20
 pypdf==5.9.0
-chromadb==1.0.15
+chromadb==1.0.0
 google-genai==1.36.0
 pytest==8.3.4
