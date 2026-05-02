@@ -9,43 +9,10 @@ from app.models.data_source import DataSource
 from app.models.message import Message
 from app.models.user import User
 from app.services.audit import create_audit_log
-from app.services.chroma_store import chroma_store
+from app.services.chat_fallbacks import build_no_sources_reply, should_prefer_indexed_context
 from app.services.rag_pipeline import build_citations, build_context_blocks, build_history_blocks, prepare_retrieved_chunks
 from app.services.llm_service import generate_unified_answer
 from app.services.text_sanitizer import sanitize_excerpt
-
-
-CASUAL_MESSAGES = {
-    "hi",
-    "hello",
-    "hey",
-    "how are you",
-    "hi how are you",
-    "thanks",
-    "thank you",
-}
-
-DOCUMENT_HINTS = {
-    "file",
-    "files",
-    "document",
-    "documents",
-    "pdf",
-    "uploaded",
-    "upload",
-    "source",
-    "sources",
-    "lecture",
-    "slides",
-    "notes",
-}
-
-
-def _should_prefer_indexed_context(question: str, has_retrieval_hits: bool) -> bool:
-    normalized = question.strip().lower()
-    if has_retrieval_hits:
-        return True
-    return any(token in normalized for token in DOCUMENT_HINTS)
 
 
 def build_assistant_reply(
@@ -77,11 +44,10 @@ def build_assistant_reply(
             has_indexed_sources=False,
             prefer_indexed_context=False,
         )
-        reply_text = unified_answer or (
-            "I do not have any indexed sources yet. You can still chat with me generally, or upload a document "
-            "and wait until indexing reaches 100% if you want document-grounded answers."
-        )
+        reply_text = build_no_sources_reply(user_message.content, unified_answer)
     else:
+        from app.services.chroma_store import chroma_store
+
         result = chroma_store.query_document_chunks(
             user_id=user.id,
             query=user_message.content,
@@ -100,7 +66,7 @@ def build_assistant_reply(
             history_blocks=history_blocks,
             context_blocks=context_blocks,
             has_indexed_sources=True,
-            prefer_indexed_context=_should_prefer_indexed_context(user_message.content, bool(bullet_points)),
+            prefer_indexed_context=should_prefer_indexed_context(user_message.content, bool(bullet_points)),
         )
         if unified_answer:
             reply_text = unified_answer
@@ -112,7 +78,7 @@ def build_assistant_reply(
                 "LLM synthesis is not enabled yet, so this reply is showing the grounded retrieval context directly."
             )
         else:
-            if user_message.content.strip().lower() in CASUAL_MESSAGES:
+            if user_message.content.strip().lower() in {"hi", "hello", "hey", "how are you", "hi how are you", "thanks", "thank you"}:
                 reply_text = "Hello! How can I help you today?"
             else:
                 reply_text = (
