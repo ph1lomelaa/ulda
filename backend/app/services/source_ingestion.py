@@ -1,5 +1,6 @@
 from datetime import UTC, datetime
 import json
+import logging
 from pathlib import Path
 
 from sqlalchemy import delete
@@ -18,6 +19,9 @@ from app.services.google_sheets_connector import extract_sheet_text
 from app.services.postgres_connector import extract_snapshot_text
 from app.services.text_chunker import chunk_text
 from app.services.text_sanitizer import sanitize_text
+
+
+logger = logging.getLogger(__name__)
 
 
 def process_uploaded_document(*, source_id: str, document_id: str, sync_run_id: str) -> None:
@@ -130,6 +134,14 @@ def process_uploaded_document(*, source_id: str, document_id: str, sync_run_id: 
             )
         db.commit()
     except Exception as exc:
+        logger.exception(
+            "Source ingestion failed",
+            extra={
+                "source_id": source_id,
+                "document_id": document_id,
+                "sync_run_id": sync_run_id,
+            },
+        )
         db.rollback()
         sync_run = db.get(SourceSyncRun, sync_run_id)
         source = db.get(DataSource, source_id)

@@ -16,7 +16,7 @@ services:
       retries: 10
 
   chroma:
-    image: chromadb/chroma:0.5.18
+    image: chromadb/chroma:1.0.15
     container_name: ulda-chroma
     restart: unless-stopped
     volumes:
