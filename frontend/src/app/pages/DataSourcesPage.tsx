@@ -59,7 +59,7 @@ export function DataSourcesPage() {
   });
   const [googleSheetsForm, setGoogleSheetsForm] = useState({
     name: "",
-    spreadsheetId: "",
+    sheetReference: "",
     sheetGid: "0",
     sheetName: "",
   });
@@ -221,17 +221,26 @@ export function DataSourcesPage() {
     setError(null);
 
     try {
+      const sheetReference = googleSheetsForm.sheetReference.trim();
+      const parsedSpreadsheetId = sheetReference.includes("docs.google.com")
+        ? sheetReference.match(/\/spreadsheets\/d\/([^/]+)/)?.[1] ?? sheetReference
+        : sheetReference;
+      const parsedSheetGid =
+        googleSheetsForm.sheetGid.trim() ||
+        sheetReference.match(/[?#&]gid=(\d+)/)?.[1] ||
+        "0";
+
       const response = await createGoogleSheetsSource(accessToken, {
         name: googleSheetsForm.name.trim(),
-        spreadsheet_id: googleSheetsForm.spreadsheetId.trim(),
-        sheet_gid: googleSheetsForm.sheetGid.trim() || "0",
+        spreadsheet_id: parsedSpreadsheetId,
+        sheet_gid: parsedSheetGid,
         sheet_name: googleSheetsForm.sheetName.trim() || undefined,
       });
       setSources((current) => [response.source, ...current.filter((item) => item.id !== response.source.id)]);
       void refreshSourceStatus(response.source.id, response.source.latest_sync_run.id);
       setGoogleSheetsForm({
         name: "",
-        spreadsheetId: "",
+        sheetReference: "",
         sheetGid: "0",
         sheetName: "",
       });
@@ -424,10 +433,10 @@ export function DataSourcesPage() {
             />
             <input
               type="text"
-              placeholder="Spreadsheet ID"
+              placeholder="Sheet URL or Spreadsheet ID"
               className="h-9 px-3 rounded-lg bg-white/10 border border-white/20 text-sm text-white placeholder:text-white/40"
-              value={googleSheetsForm.spreadsheetId}
-              onChange={(event) => setGoogleSheetsForm((current) => ({ ...current, spreadsheetId: event.target.value }))}
+              value={googleSheetsForm.sheetReference}
+              onChange={(event) => setGoogleSheetsForm((current) => ({ ...current, sheetReference: event.target.value }))}
               required
             />
             <input

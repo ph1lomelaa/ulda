@@ -26,12 +26,16 @@ def get_integrations() -> list[dict[str, str | bool]]:
             "detail": "Per-user collections enabled",
         },
         {
-            "id": "gemini",
-            "name": "Gemini",
+            "id": "llm",
+            "name": settings.llm_provider_label,
             "description": "LLM synthesis on top of grounded retrieval context",
-            "status": "active" if bool(settings.gemini_api_key) else "needs_config",
-            "connected": bool(settings.gemini_api_key),
-            "detail": settings.gemini_model if settings.gemini_api_key else "Set GEMINI_API_KEY to enable synthesis",
+            "status": "active" if settings.llm_enabled else "needs_config",
+            "connected": settings.llm_enabled,
+            "detail": (
+                f"{settings.llm_model} via {settings.llm_effective_base_url}"
+                if settings.llm_enabled
+                else "Set LLM_API_KEY and LLM_MODEL to enable synthesis"
+            ),
         },
         {
             "id": "postgres-external",

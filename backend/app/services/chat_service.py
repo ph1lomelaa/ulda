@@ -1,4 +1,6 @@
 import json
+import logging
+import time
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -15,6 +17,25 @@ from app.services.llm_service import generate_unified_answer
 from app.services.text_sanitizer import sanitize_excerpt
 
 
+logger = logging.getLogger(__name__)
+
+
+CASUAL_MESSAGES = {
+    "hi",
+    "hello",
+    "hey",
+    "how are you",
+    "hi how are you",
+    "how are you doing",
+    "how are u",
+    "как ты",
+    "как дела",
+    "привет",
+    "thanks",
+    "thank you",
+    "спасибо",
+}
+
 def build_assistant_reply(
     *,
     db: Session,
@@ -22,6 +43,30 @@ def build_assistant_reply(
     conversation: Conversation,
     user_message: Message,
 ) -> Message:
+    started_at = time.perf_counter()
+    normalized_question = user_message.content.strip().lower()
+
+    if normalized_question in CASUAL_MESSAGES:
+        reply_text = "Hello! How can I help you today?"
+        citations: list[dict[str, str]] = []
+        logger.info("chat_reply_short_circuit_casual elapsed=%.3fs", time.perf_counter() - started_at)
+        assistant_message = Message(
+            conversation_id=conversation.id,
+            role="assistant",
+            content=reply_text,
+            citations_json=json.dumps(citations, ensure_ascii=True),
+        )
+        db.add(assistant_message)
+        create_audit_log(
+            db=db,
+            user=user,
+            action="chat_reply_generated",
+            entity_type="conversation",
+            entity_id=conversation.id,
+            detail=sanitize_excerpt(f"Question length: {len(user_message.content)}; citations: 0", 255),
+        )
+        return assistant_message
+
     history_messages = db.scalars(
         select(Message)
         .where(Message.conversation_id == conversation.id, Message.id != user_message.id)
@@ -53,6 +98,7 @@ def build_assistant_reply(
             query=user_message.content,
             limit=settings.retrieval_candidate_limit,
         )
+        logger.info("chat_retrieval elapsed=%.3fs", time.perf_counter() - started_at)
         chunks = prepare_retrieved_chunks(result, query=user_message.content)
         citations = build_citations(chunks)
         context_blocks = build_context_blocks(chunks)
@@ -68,6 +114,7 @@ def build_assistant_reply(
             has_indexed_sources=True,
             prefer_indexed_context=should_prefer_indexed_context(user_message.content, bool(bullet_points)),
         )
+        logger.info("chat_llm elapsed=%.3fs", time.perf_counter() - started_at)
         if unified_answer:
             reply_text = unified_answer
         else:
@@ -92,4 +139,5 @@ def build_assistant_reply(
         entity_id=conversation.id,
         detail=sanitize_excerpt(f"Question length: {len(user_message.content)}; citations: {len(citations)}", 255),
     )
+    logger.info("chat_reply_total elapsed=%.3fs", time.perf_counter() - started_at)
     return assistant_message

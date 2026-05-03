@@ -29,8 +29,12 @@ class Settings(BaseSettings):
     chroma_host: str = Field(default="127.0.0.1", alias="CHROMA_HOST")
     chroma_port: int = Field(default=8001, alias="CHROMA_PORT")
     chroma_collection_prefix: str = Field(default="ulda", alias="CHROMA_COLLECTION_PREFIX")
-    gemini_api_key: str | None = Field(default=None, alias="GEMINI_API_KEY")
-    gemini_model: str = Field(default="gemini-2.5-flash", alias="GEMINI_MODEL")
+    llm_provider: str = Field(default="xai", alias="LLM_PROVIDER")
+    llm_api_key: str | None = Field(default=None, alias="LLM_API_KEY")
+    llm_model: str = Field(default="grok-3-mini", alias="LLM_MODEL")
+    llm_base_url: str | None = Field(default=None, alias="LLM_BASE_URL")
+    llm_timeout_seconds: float = Field(default=60.0, alias="LLM_TIMEOUT_SECONDS")
+    llm_temperature: float = Field(default=0.2, alias="LLM_TEMPERATURE")
     retrieval_candidate_limit: int = Field(default=8, alias="RETRIEVAL_CANDIDATE_LIMIT")
     retrieval_context_limit: int = Field(default=5, alias="RETRIEVAL_CONTEXT_LIMIT")
     retrieval_score_threshold: float = Field(default=0.2, alias="RETRIEVAL_SCORE_THRESHOLD")
@@ -57,6 +61,35 @@ class Settings(BaseSettings):
     def allowed_frontend_origins(self) -> list[str]:
         origins = [self.frontend_origin, self.frontend_origin_localhost]
         return list(dict.fromkeys(origin.strip() for origin in origins if origin.strip()))
+
+    @property
+    def llm_effective_base_url(self) -> str | None:
+        if self.llm_base_url:
+            return self.llm_base_url.strip()
+
+        provider = self.llm_provider.strip().lower()
+        provider_defaults = {
+            "xai": "https://api.x.ai/v1",
+            "openai": "https://api.openai.com/v1",
+            "groq": "https://api.groq.com/openai/v1",
+            "openrouter": "https://openrouter.ai/api/v1",
+        }
+        return provider_defaults.get(provider)
+
+    @property
+    def llm_enabled(self) -> bool:
+        return bool(self.llm_api_key and self.llm_model.strip())
+
+    @property
+    def llm_provider_label(self) -> str:
+        provider = self.llm_provider.strip().lower()
+        labels = {
+            "xai": "xAI Grok",
+            "openai": "OpenAI",
+            "groq": "Groq",
+            "openrouter": "OpenRouter",
+        }
+        return labels.get(provider, provider.upper() if provider else "LLM")
 
 
 settings = Settings()

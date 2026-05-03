@@ -1,7 +1,12 @@
 import csv
 import io
+import re
+from urllib.parse import parse_qs, urlparse
 from urllib.error import HTTPError, URLError
 from urllib.request import urlopen
+
+
+_SPREADSHEET_ID_PATTERN = re.compile(r"/spreadsheets/d/([^/]+)")
 
 
 def build_export_url(spreadsheet_id: str, sheet_gid: str) -> str:
@@ -17,8 +22,29 @@ def build_export_url(spreadsheet_id: str, sheet_gid: str) -> str:
     )
 
 
+def parse_sheet_reference(reference: str, fallback_gid: str = "0") -> tuple[str, str]:
+    clean_reference = reference.strip()
+    if not clean_reference:
+        raise ValueError("Spreadsheet ID or URL is required")
+
+    if "docs.google.com/spreadsheets/" not in clean_reference:
+        return clean_reference, fallback_gid.strip() or "0"
+
+    parsed = urlparse(clean_reference)
+    match = _SPREADSHEET_ID_PATTERN.search(parsed.path)
+    if match is None:
+        raise ValueError("Google Sheets URL must contain a spreadsheet ID")
+
+    spreadsheet_id = match.group(1)
+    query_gid = parse_qs(parsed.query).get("gid", [None])[0]
+    fragment_gid = parse_qs(parsed.fragment.lstrip("#")).get("gid", [None])[0] if parsed.fragment else None
+    sheet_gid = (query_gid or fragment_gid or fallback_gid).strip() or "0"
+    return spreadsheet_id, sheet_gid
+
+
 def fetch_csv_text(config: dict[str, str]) -> str:
-    export_url = build_export_url(config["spreadsheet_id"], config["sheet_gid"])
+    spreadsheet_id, sheet_gid = parse_sheet_reference(config["spreadsheet_id"], config.get("sheet_gid", "0"))
+    export_url = build_export_url(spreadsheet_id, sheet_gid)
     try:
         with urlopen(export_url, timeout=15) as response:
             payload = response.read().decode("utf-8-sig", errors="replace")
@@ -37,6 +63,7 @@ def validate_connection(config: dict[str, str]) -> None:
 
 
 def extract_sheet_text(config: dict[str, str]) -> str:
+    spreadsheet_id, sheet_gid = parse_sheet_reference(config["spreadsheet_id"], config.get("sheet_gid", "0"))
     csv_text = fetch_csv_text(config)
     reader = csv.reader(io.StringIO(csv_text))
     rows = list(reader)
@@ -46,8 +73,8 @@ def extract_sheet_text(config: dict[str, str]) -> str:
     sheet_name = (config.get("sheet_name") or "Sheet").strip()
     lines = [
         f"Google Sheet Snapshot: {sheet_name}",
-        f"Spreadsheet ID: {config['spreadsheet_id']}",
-        f"Sheet GID: {config['sheet_gid']}",
+        f"Spreadsheet ID: {spreadsheet_id}",
+        f"Sheet GID: {sheet_gid}",
         "",
     ]
 

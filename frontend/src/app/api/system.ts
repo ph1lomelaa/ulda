@@ -11,7 +11,14 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api";
 
 async function parseResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    throw new Error("Request failed");
+    let detail = "Request failed";
+    try {
+      const payload = await response.json();
+      detail = payload.detail ?? detail;
+    } catch {
+      // Keep fallback message.
+    }
+    throw new Error(detail);
   }
   return response.json() as Promise<T>;
 }

@@ -1,9 +1,18 @@
-from app.services.google_sheets_connector import build_export_url, extract_sheet_text
+from app.services.google_sheets_connector import build_export_url, extract_sheet_text, parse_sheet_reference
 
 
 def test_build_export_url_uses_spreadsheet_id_and_gid() -> None:
     url = build_export_url("sheet123", "42")
     assert url == "https://docs.google.com/spreadsheets/d/sheet123/export?format=csv&gid=42"
+
+
+def test_parse_sheet_reference_accepts_url_with_gid() -> None:
+    spreadsheet_id, sheet_gid = parse_sheet_reference(
+        "https://docs.google.com/spreadsheets/d/sheet123/edit?gid=42#gid=42"
+    )
+
+    assert spreadsheet_id == "sheet123"
+    assert sheet_gid == "42"
 
 
 def test_extract_sheet_text_formats_columns_and_rows(monkeypatch) -> None:

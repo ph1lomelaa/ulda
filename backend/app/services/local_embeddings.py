@@ -4,7 +4,7 @@ import re
 
 
 TOKEN_RE = re.compile(r"[a-zA-Z0-9_]+")
-EMBEDDING_DIMENSION = 256
+EMBEDDING_DIMENSION = 384
 
 
 def embed_text(text: str) -> list[float]:

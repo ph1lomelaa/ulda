@@ -44,7 +44,8 @@ Notes:
 
 - Docker Compose reads the root `.env`.
 - The backend is configured to read that same root `.env` even if you start it from inside `backend/`.
-- `GEMINI_API_KEY` is optional, but without it the app falls back to retrieval-only responses instead of LLM synthesis.
+- `LLM_API_KEY` is optional, but without it the app falls back to retrieval-only responses instead of LLM synthesis.
+- The default provider is `xAI` with `LLM_BASE_URL=https://api.x.ai/v1` and `LLM_MODEL=grok-3-mini`.
 
 ## Local Development
 
@@ -66,6 +67,21 @@ Stop and remove volumes:
 docker compose down -v
 ```
 
+## Option 2: Run Behind Caddy On A Server
+
+Use the root `docker-compose.yml` and the [Caddyfile](/Users/muslimakosmagambetova/Downloads/ULDA%20Dashboard%20UI%20Design/Caddyfile):
+
+```bash
+docker compose up -d --build
+```
+
+Required setup:
+
+- Create the external Docker network `bull_project_default` if it does not already exist.
+- Run Caddy with the provided Caddyfile so it can reverse proxy to `frontend:80` and `backend:8000`.
+- Set `DOMAIN`, `FRONTEND_ORIGIN`, `JWT_SECRET_KEY`, `JWT_REFRESH_SECRET_KEY`, and `LLM_API_KEY` in the server environment.
+- Keep `VITE_API_BASE_URL=/api` for the prod frontend build so browser requests go through Caddy.
+
 Services:
 
 - frontend: `http://127.0.0.1:5173`
@@ -83,6 +99,7 @@ Production uses:
 - `docker-compose.prod.yml`: production stack
 
 ### 1. Point the domain to the server
+
 
 Create an `A` record for your domain and point it to the public IP of the server.
 

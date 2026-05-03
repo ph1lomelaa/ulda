@@ -47,8 +47,12 @@ UPLOAD_STORAGE_DIR=storage/uploads
 CHROMA_HOST=127.0.0.1
 CHROMA_PORT=8001
 CHROMA_COLLECTION_PREFIX=ulda
-GEMINI_API_KEY=
-GEMINI_MODEL=gemini-2.5-flash
+LLM_PROVIDER=xai
+LLM_API_KEY=
+LLM_BASE_URL=https://api.x.ai/v1
+LLM_MODEL=grok-3-mini
+LLM_TIMEOUT_SECONDS=60
+LLM_TEMPERATURE=0.2
 RETRIEVAL_CANDIDATE_LIMIT=8
 RETRIEVAL_CONTEXT_LIMIT=5
 RETRIEVAL_SCORE_THRESHOLD=0.2
@@ -57,6 +61,15 @@ RETRIEVAL_DEDUP_SIMILARITY=0.92
 CONVERSATION_HISTORY_LIMIT=8
 CITATION_EXCERPT_CHARS=240
 ASSISTANT_SYSTEM_PROMPT=You are ULDA, an enterprise data assistant. Use indexed documents as your primary context, but answer like a capable AI assistant: explain, summarize, infer, reorganize, and help the user work with the material. Prefer grounded answers when the documents are relevant, cite the relevant sources when you use them, and if the documents are incomplete, you may still answer helpfully from general knowledge without pretending the files said something they did not.
+```
+
+For `grok`, set at minimum:
+
+```env
+LLM_PROVIDER=xai
+LLM_API_KEY=your_xai_api_key
+LLM_BASE_URL=https://api.x.ai/v1
+LLM_MODEL=grok-3-mini
 ```
 
 ## Auth Endpoints

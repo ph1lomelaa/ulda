@@ -1,4 +1,5 @@
 import chromadb
+from chromadb.errors import InvalidArgumentError
 
 from app.core.config import settings
 from app.services.local_embeddings import embed_text
@@ -41,11 +42,14 @@ class ChromaStore:
 
     def query_document_chunks(self, *, user_id: str, query: str, limit: int = 5) -> dict:
         collection = self._client.get_or_create_collection(name=self._collection_name(user_id))
-        return collection.query(
-            query_embeddings=[embed_text(query)],
-            n_results=limit,
-            include=["documents", "metadatas", "distances"],
-        )
+        try:
+            return collection.query(
+                query_embeddings=[embed_text(query)],
+                n_results=limit,
+                include=["documents", "metadatas", "distances"],
+            )
+        except InvalidArgumentError:
+            return {"documents": [[]], "metadatas": [[]], "distances": [[]]}
 
     def delete_document_chunks(self, *, user_id: str, document_id: str) -> None:
         collection = self._client.get_or_create_collection(name=self._collection_name(user_id))
