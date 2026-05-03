@@ -1,18 +1,14 @@
-# ULDA Dashboard UI Design
+# ULDA - project inf 395
 
-## Capstone Project Brief
+## Project Title
 
-Universal AI Assistant Platform for Enterprise Data Integration
+Universal LLM-Powered Data Assistant (ULDA)
 
 ## Team Members
 
 - Altynai Nazik (`230103323`) - Frontend Developer & Database Design
 - Muslima Kosmagambetova (`230103269`) - Backend Developer & Database Design
 - Zhandos Yeldos (`230103321`) - DevOps & System Architecture
-
-## Project Title
-
-Universal LLM-Powered Data Assistant (ULDA)
 
 ## Topic Area
 
