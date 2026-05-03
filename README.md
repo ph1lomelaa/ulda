@@ -1,22 +1,14 @@
 # ULDA - project inf 395
 
-## Project Title
+## Project Title - ULDA
 
-Universal LLM-Powered Data Assistant (ULDA)
+Universal LLM-Powered Data Assistant 
 
 ## Architecture Link
 
 The detailed architecture document is here: [architecture.md](./architecture.md)
 
-## Deployed URL
-
-https://uldaai.duckdns.org
-
-## Git Repo Link
-
-https://github.com/ph1lomelaa/ulda.git
-
-## Team Members
+## Deployed URL - https://uldaai.duckdns.org
 
 ### Team Members (with Email IDs)
 
