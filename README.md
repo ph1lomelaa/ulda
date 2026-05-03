@@ -12,7 +12,7 @@ The detailed architecture document is here: [architecture.md](./architecture.md)
 
 - Altynai Nazik (`230103323`) - Frontend Developer & Database Design - Email: 230103323@sdu.edu.kz
 - Muslima Kosmagambetova (`230103269`) - Backend Developer & Database Design - Email: 230103269@sdu.edu.kz
-- Zhandos Yeldos (`230103321`) - DevOps & System Architecture - Email: T230103321@sdu.edu.kzODO
+- Zhandos Yeldos (`230103321`) - DevOps & System Architecture - Email: 230103321@sdu.edu.kz
 
 ## Topic Area
 
