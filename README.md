@@ -1,6 +1,8 @@
 # ULDA - project inf 395
 
-## Project Title - Universal LLM-Powered Data Assistant (ULDA)
+## Project Title
+
+Universal LLM-Powered Data Assistant (ULDA)
 
 ## Architecture Link
 
@@ -10,11 +12,17 @@ The detailed architecture document is here: [architecture.md](./architecture.md)
 
 https://uldaai.duckdns.org
 
+## Git Repo Link
+
+https://github.com/ph1lomelaa/ulda.git
+
 ## Team Members
 
-- Altynai Nazik (`230103323`) - Frontend Developer & Database Design
-- Muslima Kosmagambetova (`230103269`) - Backend Developer & Database Design
-- Zhandos Yeldos (`230103321`) - DevOps & System Architecture
+### Team Members (with Email IDs)
+
+- Altynai Nazik (`230103323`) - Frontend Developer & Database Design - Email: 230103323@sdu.edu.kz
+- Muslima Kosmagambetova (`230103269`) - Backend Developer & Database Design - Email: 230103269@sdu.edu.kz
+- Zhandos Yeldos (`230103321`) - DevOps & System Architecture - Email: T230103321@sdu.edu.kzODO
 
 ## Topic Area
 
@@ -55,6 +63,16 @@ The assistant is intentionally built to degrade gracefully. If LLM synthesis is 
 
 These users typically need quick access to company knowledge without writing SQL, opening multiple documents, or manually copying information from one system into another.
 
+## Key Features
+
+- Multi-source ingestion from uploaded files, Google Sheets, and PostgreSQL
+- Natural-language chat over indexed enterprise data
+- Citations and grounded retrieval context in answers
+- Conversation history retention for continuity
+- Optional LLM synthesis with graceful fallback behavior
+- Audit logging for major actions and source processing
+- Production deployment behind a shared Caddy reverse proxy
+
 ## Implemented Scope
 
 - Upload PDF, TXT, CSV, MD, and JSON files
@@ -79,7 +97,7 @@ Implemented assistant behavior covers:
 - casual-message short-circuiting so the assistant can answer simple greetings without a retrieval round trip
 - fallback replies when synthesis cannot be completed
 
-## Tech Stack
+## Technology Stack
 
 - Frontend: Vite, React, TypeScript
 - Backend: FastAPI, SQLAlchemy, Alembic
@@ -89,6 +107,16 @@ Implemented assistant behavior covers:
 - Deployment: Docker Compose + Caddy + nginx
 
 The stack was chosen to keep the app container-friendly and easy to deploy on a single server while still supporting future expansion toward more connectors or a different LLM provider.
+
+## Expected Outcome
+
+The expected outcome is a working capstone prototype that demonstrates:
+
+- a public deployed web application
+- source ingestion from uploaded files and external connectors
+- authenticated access and persistent conversation history
+- grounded AI responses with citations
+- a production deployment path that runs on the server
 
 ## System Report
 
