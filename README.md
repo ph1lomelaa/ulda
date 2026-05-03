@@ -4,6 +4,10 @@
 
 Universal LLM-Powered Data Assistant (ULDA)
 
+## Architecture Link
+
+The detailed architecture document is here: [architecture.md](./architecture.md)
+
 ## Team Members
 
 - Altynai Nazik (`230103323`) - Frontend Developer & Database Design
@@ -136,9 +140,6 @@ The UI uses authenticated requests with `credentials: "include"` and a bearer to
 
 The frontend is organized around route-level pages and reusable UI components. The landing page explains the product, the auth pages handle sign-in and registration, the dashboard gives a status overview, and the source/chat pages are the working area for connected data.
 
-## Architecture Link
-
-The detailed architecture document is here: [architecture.md](./architecture.md)
 
 ## Build And Deployment
 
