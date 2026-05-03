@@ -66,6 +66,9 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+    networks:
+      - default
+      - caddy_net
   frontend:
     build:
       context: ./frontend
