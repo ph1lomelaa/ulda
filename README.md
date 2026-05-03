@@ -1,265 +1,167 @@
 # ULDA Dashboard UI Design
 
-ULDA is a document-grounded AI assistant. Users upload or connect data sources, ULDA indexes them into ChromaDB, and the chat uses those documents as primary context while still answering naturally like an AI assistant.
+## Capstone Project Brief
 
-## Stack
+Universal AI Assistant Platform for Enterprise Data Integration
 
-- `frontend/`: Vite + React
-- `backend/`: FastAPI + SQLAlchemy + Alembic
-- `postgres`: primary relational database
-- `chroma`: vector store for retrieval
-- `docker-compose.yml`: local development stack
-- `docker-compose.prod.yml`: production stack behind Caddy
+## Team Members
 
-## Project Structure
+- Altynai Nazik (`230103323`) - Frontend Developer & Database Design
+- Muslima Kosmagambetova (`230103269`) - Backend Developer & Database Design
+- Zhandos Yeldos (`230103321`) - DevOps & System Architecture
 
-```text
-.
-├── .env.example
-├── .env.production.example
-├── Caddyfile
-├── docker-compose.yml
-├── docker-compose.prod.yml
-├── backend/
-└── frontend/
-```
+## Project Title
 
-## Environment
+Universal LLM-Powered Data Assistant (ULDA)
 
-The main `.env` file belongs in the project root.
+## Topic Area
 
-For local development:
+AI/ML Systems, Enterprise Software, Knowledge Management, Natural Language Processing
 
-```bash
-cp .env.example .env
-```
+## Project Summary
 
-For production on the server:
+ULDA is a document-grounded AI assistant for enterprise data integration. It indexes content into ChromaDB, retrieves relevant context from connected sources, and answers through a provider-backed LLM when configured. The application is designed around a simple idea: one conversational interface should be able to work with uploaded documents, public Google Sheets, and database snapshots without forcing the user to switch between tools.
 
-```bash
-cp .env.production.example .env
-```
+The full system breakdown is documented in [architecture.md](./architecture.md).
 
-Notes:
+## Problem Statement
 
-- Docker Compose reads the root `.env`.
-- The backend is configured to read that same root `.env` even if you start it from inside `backend/`.
-- `LLM_API_KEY` is optional, but without it the app falls back to retrieval-only responses instead of LLM synthesis.
-- The default provider is `xAI` with `LLM_BASE_URL=https://api.x.ai/v1` and `LLM_MODEL=grok-3-mini`.
+Enterprises keep knowledge in spreadsheets, PDFs, documents, and databases, but users still have to search each source separately. That process is slow, error-prone, and not friendly to non-technical users.
 
-## Local Development
+ULDA addresses this by providing a unified natural-language interface over uploaded files and connected sources.
 
-Start from the project root:
+## Proposed Solution
 
-```bash
-docker compose up --build -d
-```
+ULDA acts as a middleware layer between the user and the data sources. The platform:
 
-Stop:
+- accepts documents and connected sources
+- extracts and indexes their contents
+- retrieves relevant chunks for each question
+- synthesizes answers when an LLM is configured
+- preserves citations, history, and audit logs
 
-```bash
-docker compose down
-```
+The assistant is intentionally built to degrade gracefully. If LLM synthesis is unavailable, the system still returns grounded retrieval context instead of failing completely. If a source has not been indexed yet, the UI still remains usable and the user sees the current status of the integration.
 
-Stop and remove volumes:
+## Target Users
 
-```bash
-docker compose down -v
-```
+- Knowledge workers
+- Customer support teams
+- Business analysts
+- HR teams
+- Project managers
+- Small and mid-size enterprises
 
-## Option 2: Run Behind Caddy On A Server
+These users typically need quick access to company knowledge without writing SQL, opening multiple documents, or manually copying information from one system into another.
 
-Use the root `docker-compose.yml` and the [Caddyfile](/Users/muslimakosmagambetova/Downloads/ULDA%20Dashboard%20UI%20Design/Caddyfile):
+## Implemented Scope
 
-```bash
-docker compose up -d --build
-```
+- Upload PDF, TXT, CSV, MD, and JSON files
+- Connect Google Sheets and PostgreSQL sources
+- Index source text into ChromaDB
+- Ask questions in chat with citations from retrieved context
+- Support optional LLM synthesis over grounded context
+- Provide authenticated access with refresh-token cookies
+- Record audit logs for major actions
+- Run behind Caddy in production under one public domain
 
-Required setup:
+Implemented source handling covers:
 
-- Create the external Docker network `bull_project_default` if it does not already exist.
-- Run Caddy with the provided Caddyfile so it can reverse proxy to `frontend:80` and `backend:8000`.
-- Set `DOMAIN`, `FRONTEND_ORIGIN`, `JWT_SECRET_KEY`, `JWT_REFRESH_SECRET_KEY`, and `LLM_API_KEY` in the server environment.
-- Keep `VITE_API_BASE_URL=/api` for the prod frontend build so browser requests go through Caddy.
+- uploaded files stored on the server and indexed asynchronously
+- PostgreSQL snapshots captured from a configured database connection
+- Google Sheets snapshots pulled from a public sheet URL or spreadsheet ID
 
-Services:
+Implemented assistant behavior covers:
 
-- frontend: `http://127.0.0.1:5173`
-- backend API: `http://127.0.0.1:18000`
-- backend docs: `http://127.0.0.1:18000/docs`
-- PostgreSQL: `127.0.0.1:55432`
-- ChromaDB: `http://127.0.0.1:8001`
+- conversation history retention for continuity
+- retrieval scoring, chunk deduplication, and citation building
+- casual-message short-circuiting so the assistant can answer simple greetings without a retrieval round trip
+- fallback replies when synthesis cannot be completed
 
-## Production Deployment
+## Tech Stack
 
-Production uses:
+- Frontend: Vite, React, TypeScript
+- Backend: FastAPI, SQLAlchemy, Alembic
+- Database: PostgreSQL 16
+- Vector store: ChromaDB
+- LLM provider layer: OpenAI-compatible client
+- Deployment: Docker Compose + Caddy + nginx
 
-- `frontend/Dockerfile.prod`: builds Vite and serves static files with nginx
-- `Caddyfile`: serves the domain, terminates TLS, proxies `/api/*` to backend
-- `docker-compose.prod.yml`: production stack
+The stack was chosen to keep the app container-friendly and easy to deploy on a single server while still supporting future expansion toward more connectors or a different LLM provider.
 
-### 1. Point the domain to the server
+## System Report
 
+### Backend
 
-Create an `A` record for your domain and point it to the public IP of the server.
+The backend exposes REST endpoints for:
 
-Examples:
+- authentication: register, login, refresh, logout, me
+- chat: conversations, messages, export
+- data sources: uploads, PostgreSQL, Google Sheets, sync runs
+- system status and integrations
+- audit logs
 
-- `your-domain.com` -> `SERVER_IP`
-- `www.your-domain.com` -> `SERVER_IP` if you want `www` too
+The backend keeps user-specific state in PostgreSQL and stores documents, conversations, messages, and audit events in relational tables. It also starts a background job runner on startup to process queued source sync jobs.
 
-### 2. Prepare production env
+The backend code is split into a few clear layers:
 
-On the server, in the project root:
+- `app/api/` defines the HTTP routes.
+- `app/core/` holds configuration and environment loading.
+- `app/models/` defines database tables.
+- `app/schemas/` defines request and response contracts.
+- `app/services/` contains the business logic for auth, retrieval, ingestion, embeddings, storage, and LLM synthesis.
 
-```bash
-cp .env.production.example .env
-```
+This structure keeps the route handlers thin and pushes real application logic into service modules, which makes the project easier to debug and extend.
 
-Then set at minimum:
+### Retrieval Pipeline
 
-```env
-DOMAIN=your-domain.com
-FRONTEND_ORIGIN=https://your-domain.com
-COOKIE_DOMAIN=your-domain.com
-POSTGRES_PASSWORD=strong-password
-JWT_SECRET_KEY=strong-secret
-JWT_REFRESH_SECRET_KEY=strong-secret-too
-GEMINI_API_KEY=your-key
-```
+Uploaded or connected sources are normalized into text, split into chunks, and stored locally in PostgreSQL and in ChromaDB. When a user asks a question, the backend:
 
-Important:
+1. loads recent conversation history,
+2. retrieves relevant chunks from ChromaDB,
+3. builds citations and context blocks,
+4. optionally calls the configured LLM provider,
+5. falls back to grounded retrieval output when synthesis is unavailable.
 
-- `COOKIE_SECURE=true` should stay enabled in production
-- `VITE_API_BASE_URL=/api` lets frontend and backend work under one domain
-- backend uses `postgres` and `chroma` by Docker service name internally, so they are not exposed publicly
+The retrieval layer is not just a raw vector search. It also applies lexical scoring, per-document chunk limits, similarity-based deduplication, and excerpt sanitization so the assistant gets cleaner context and does not repeat near-identical passages.
 
-### 3. Make sure ports 80 and 443 are free
+### Frontend
 
-On the server:
+The frontend is a single-page app with these main views:
 
-```bash
-ss -tulpn | grep -E ':80 |:443 '
-```
+- landing page
+- login and registration
+- dashboard
+- data sources
+- source details
+- chat
+- connected apps
 
-If another reverse proxy already owns them, either stop it or integrate ULDA into that existing proxy instead of starting the bundled Caddy container.
+The UI uses authenticated requests with `credentials: "include"` and a bearer token for the current user session.
 
-### 4. Start production stack
+The frontend is organized around route-level pages and reusable UI components. The landing page explains the product, the auth pages handle sign-in and registration, the dashboard gives a status overview, and the source/chat pages are the working area for connected data.
 
-From the project root:
+## Architecture Link
 
-```bash
-docker compose -f docker-compose.prod.yml up --build -d
-```
+The detailed architecture document is here: [architecture.md](./architecture.md)
 
-Check status:
+## Build And Deployment
 
-```bash
-docker compose -f docker-compose.prod.yml ps
-```
+The project was assembled and deployed on the server with the current Docker-based stack. The public site runs behind the existing Caddy reverse proxy, and the backend, frontend, PostgreSQL, and ChromaDB services are containerized for server-side execution.
 
-Check logs:
+In production, the frontend is built into static files and served by nginx, while the backend is exposed only as an internal service on the Docker network. Caddy sits in front of both containers and routes browser requests to the correct service by path. That keeps the public site on a single domain and makes cookie-based authentication work correctly.
 
-```bash
-docker compose -f docker-compose.prod.yml logs -f caddy
-docker compose -f docker-compose.prod.yml logs -f backend
-docker compose -f docker-compose.prod.yml logs -f frontend
-```
+## Notes
 
-### 5. Open the app
+- Do not commit `.env` files or API keys.
+- The deployed URL must be public, not `localhost`.
+- The Google Drive assets folder must be shared as view-only.
 
-- `https://your-domain.com`
-- backend API through Caddy: `https://your-domain.com/api`
+## Deliverables Covered
 
-## Manual Local Run
+This repository covers the core capstone deliverables:
 
-Use this if you want faster iteration without full Docker frontend/backend rebuilds.
-
-### 1. Start infrastructure
-
-```bash
-docker compose up -d postgres chroma
-```
-
-### 2. Start backend
-
-```bash
-cd backend
-python3.11 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-alembic upgrade head
-uvicorn app.main:app --reload --host 0.0.0.0 --port 18000
-```
-
-### 3. Start frontend
-
-```bash
-cd frontend
-npm install
-cp .env.example .env
-npm run dev
-```
-
-## Testing
-
-Backend tests:
-
-```bash
-cd backend
-PYTHONPATH=. pytest
-```
-
-Frontend production build:
-
-```bash
-cd frontend
-npm run build
-```
-
-## Common Problems
-
-### Docker cannot pull images
-
-Symptom:
-
-- `failed to resolve source metadata`
-- `lookup registry-1.docker.io: no such host`
-
-Meaning:
-
-- Docker Desktop or Docker Engine cannot resolve or reach Docker Hub.
-
-### HTTPS does not come up
-
-Check:
-
-- DNS `A` record points to the correct server IP
-- ports `80` and `443` are reachable from the internet
-- no other proxy/container already binds `80/443`
-- Caddy logs are clean
-
-### Backend works but login/cookies fail in production
-
-Check:
-
-- `FRONTEND_ORIGIN=https://your-domain.com`
-- `COOKIE_DOMAIN=your-domain.com`
-- `COOKIE_SECURE=true`
-- the site is opened over `https`, not plain `http`
-
-## Useful Commands
-
-Local stack:
-
-```bash
-docker compose up --build -d
-docker compose down
-```
-
-Production stack:
-
-```bash
-docker compose -f docker-compose.prod.yml up --build -d
-docker compose -f docker-compose.prod.yml down
-```
+- a working web application with a chat interface
+- integrations for uploaded files, Google Sheets, and PostgreSQL
+- backend API documentation through FastAPI
+- a production deployment path for the public server
+- unit and integration tests for the main service layers
