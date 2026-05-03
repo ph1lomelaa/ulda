@@ -6,6 +6,10 @@
 
 The detailed architecture document is here: [architecture.md](./architecture.md)
 
+## Deployed URL
+
+https://uldaai.duckdns.org
+
 ## Team Members
 
 - Altynai Nazik (`230103323`) - Frontend Developer & Database Design
