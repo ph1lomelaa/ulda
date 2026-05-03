@@ -146,11 +146,6 @@ The project was assembled and deployed on the server with the current Docker-bas
 
 In production, the frontend is built into static files and served by nginx, while the backend is exposed only as an internal service on the Docker network. Caddy sits in front of both containers and routes browser requests to the correct service by path. That keeps the public site on a single domain and makes cookie-based authentication work correctly.
 
-## Notes
-
-- Do not commit `.env` files or API keys.
-- The deployed URL must be public, not `localhost`.
-- The Google Drive assets folder must be shared as view-only.
 
 ## Deliverables Covered
 
