@@ -83,34 +83,10 @@ services:
       - default
       - caddy_net
 
-  caddy:
-    image: caddy:2-alpine
-    container_name: ulda-caddy
-    restart: unless-stopped
-    depends_on:
-      backend:
-        condition: service_started
-      frontend:
-        condition: service_started
-    environment:
-      DOMAIN: ${DOMAIN}
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    ports:
-      - "80:80"
-      - "443:443"
-    networks:
-      - default
-      - caddy_net
-
 volumes:
   postgres_data:
   chroma_data:
   backend_uploads:
-  caddy_data:
-  caddy_config:
 
 networks:
   caddy_net:
