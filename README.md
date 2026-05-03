@@ -1,8 +1,6 @@
 # ULDA - project inf 395
 
-## Project Title
-
-Universal LLM-Powered Data Assistant (ULDA)
+## Project Title - Universal LLM-Powered Data Assistant (ULDA)
 
 ## Architecture Link
 
