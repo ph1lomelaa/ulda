@@ -54,8 +54,12 @@ services:
       CHROMA_PORT: 8000
       CHROMA_COLLECTION_PREFIX: ${CHROMA_COLLECTION_PREFIX:-ulda}
       UPLOAD_STORAGE_DIR: /app/storage/uploads
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+      LLM_PROVIDER: ${LLM_PROVIDER:-xai}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_BASE_URL: ${LLM_BASE_URL:-https://api.x.ai/v1}
+      LLM_MODEL: ${LLM_MODEL:-grok-3-mini}
+      LLM_TIMEOUT_SECONDS: ${LLM_TIMEOUT_SECONDS:-60}
+      LLM_TEMPERATURE: ${LLM_TEMPERATURE:-0.2}
       ASSISTANT_SYSTEM_PROMPT: ${ASSISTANT_SYSTEM_PROMPT:-You are ULDA, an enterprise data assistant. Answer only from the supplied context. If the context is insufficient, say that clearly. Be concise, concrete, and cite the relevant sources.}
     volumes:
       - backend_uploads:/app/storage/uploads
@@ -67,8 +71,11 @@ services:
       timeout: 5s
       retries: 10
     networks:
-      - default
-      - caddy_net
+      default:
+      caddy_net:
+        aliases:
+          - backend
+          - ulda-backend
   frontend:
     build:
       context: ./frontend
@@ -83,8 +90,11 @@ services:
     expose:
       - "80"
     networks:
-      - default
-      - caddy_net
+      default:
+      caddy_net:
+        aliases:
+          - frontend
+          - ulda-frontend
 
 volumes:
   postgres_data:
